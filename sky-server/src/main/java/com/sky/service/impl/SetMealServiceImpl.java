@@ -6,9 +6,11 @@ import com.sky.constant.MessageConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.dto.SetMealDTO;
 import com.sky.dto.SetMealPageQueryDTO;
+import com.sky.entity.Dish;
 import com.sky.entity.SetMeal;
 import com.sky.entity.SetMealDish;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.exception.SetMealEnableFailedException;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetMealDishMapper;
 import com.sky.mapper.SetMealMapper;
@@ -21,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -137,6 +138,30 @@ public class SetMealServiceImpl implements SetMealService {
         });
         //3、重新插入套餐和菜品的关联关系，操作setMeal_dish表，执行insert
         setMealDishMapper.insertBatch(setMealDishes);
+    }
+
+    /**
+     * 套餐起售停售
+     * @param status
+     * @param id
+     */
+    public void startOrStop(Integer status, Long id) {
+        //起售套餐是，判断套餐内是否有停售菜品，有停售菜品提示"套餐内包含未起售菜品，无法起售"
+        if (status == StatusConstant.ENABLE) {
+            List<Dish> dishList = dishMapper.getBySetMealId(id);
+            if (dishList != null && dishList.size() > 0) {
+                dishList.forEach(dish -> {
+                    if (StatusConstant.DISABLE == dish.getStatus()){
+                        throw new SetMealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
+                    }
+                });
+            }
+        }
+        SetMeal setMeal = SetMeal.builder()
+                .id(id)
+                .status(status)
+                .build();
+        setMealMapper.update(setMeal);
     }
 
 }
