@@ -21,7 +21,7 @@ public class OrderTask {
     private OrderMapper orderMapper;
 
     /**
-     * 处理超市订单
+     * 处理超时订单
      */
     @Scheduled(cron = "0 * * * * *")
     public void processTimeoutOrder() {
